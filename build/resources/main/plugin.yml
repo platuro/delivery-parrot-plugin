@@ -2,3 +2,11 @@ name: Deliveryman
 version: '1.0-SNAPSHOT'
 main: com.platuro.delivery.Deliveryman
 api-version: '1.20'
+commands:
+  openinventory:
+    description: Open the courier inventory
+    usage: /deliveryman openinventory
+
+  call:
+    description: Call the courier
+    usage: /deliveryman call

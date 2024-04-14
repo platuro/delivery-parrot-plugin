@@ -1,18 +1,22 @@
 package com.platuro.delivery;
 
+import net.kyori.adventure.text.logger.slf4j.ComponentLogger;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.jetbrains.annotations.NotNull;
 
-public final class Deliveryman extends JavaPlugin {
+public final class Deliveryman extends JavaPlugin implements Listener {
     public static Chests chests;
-    public Courier courier;
+    public static Courier courier;
 
     // sun rise checker
     BukkitRunnable sunriseChecker;
+    CourierInventory courierInventory;
 
     @Override
     public void onEnable() {
@@ -20,6 +24,7 @@ public final class Deliveryman extends JavaPlugin {
         chests = new Chests(this, this);
         chests.startSignCheckTask();
         startSunriseChecker();
+        courierInventory = new CourierInventory(this);
     }
 
     private void startSunriseChecker() {
@@ -86,6 +91,9 @@ public final class Deliveryman extends JavaPlugin {
             //ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
             //protocolManager.removePacketListeners(this);
         }
+
+        // Disable the listener
+        courierInventory.Dispose();
 
         if(sunriseChecker != null)
             sunriseChecker.cancel();

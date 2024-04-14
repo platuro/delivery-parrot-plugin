@@ -8,6 +8,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Parrot;
 import org.bukkit.entity.Villager;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -25,7 +26,7 @@ public class Courier {
     ChunkHandler chunkHandler = new ChunkHandler();
 
     // Create a list of the next locations to visit
-    private List<Location> locations = new ArrayList<>();
+    public List<Location> locations = new ArrayList<>();
     private BukkitRunnable moveTask;
 
     public Courier(Plugin plugin) {
@@ -50,15 +51,25 @@ public class Courier {
         // The villager wont die
         //villager.setInvulnerable(true);
         villager.setVariant(Parrot.Variant.RED);
+        // Set metadata
+        villager.setMetadata("Courier", new FixedMetadataValue(plugin, true));
 
         InitLocation();
+        CheckNextJob();
+    }
+
+    public void AddLocation(Location location) {
+        //check if the location is already in the list
+        if (!locations.contains(location)) {
+            locations.add(location);
+            moveVillager();
+        }
     }
 
     public void InitLocation() {
         // Get all the locations of the chests
-        int i = 0;
         for (Location location : Deliveryman.chests.senderChests.keySet()) {
-            if(Deliveryman.chests.hasItemsInChest(location)) {
+            if(Deliveryman.chests.hasItemsInChest(location, Deliveryman.chests.senderChests)) {
                 locations.add(location);
             }
         }
@@ -69,7 +80,25 @@ public class Courier {
         }
         // Add the spawn location to the end of the list
         locations.add(villager.getLocation());
+        //Print the locations
+        plugin.getLogger().info("Locations: " + locations);
         moveVillager();
+    }
+
+    public void CheckNextJob() {
+        // check every 5 minutes
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // print size
+                plugin.getLogger().info("Locations size: " + locations.size());
+                if(locations.isEmpty()) {
+                    Deliveryman.chests.ScanForChests();
+                    InitLocation();
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 20L * 60); // Run every 1 minute
+
     }
 
     public void moveVillager() {
@@ -79,14 +108,13 @@ public class Courier {
         moveTask = new BukkitRunnable() {
             public void run() {
                 if(locations.isEmpty()) {
-                    InitLocation();
                     this.cancel();
+                    return;
                 }
-
                 Location currentLocation = locations.get(0);
 
                 if (villager != null && !villager.isDead() && villager.getWorld().equals(currentLocation.getWorld())) {
-                    villager.getPathfinder().moveTo(currentLocation, 10.0D);
+                    villager.getPathfinder().moveTo(currentLocation);
                     // Print
                     plugin.getLogger().info("Moving to " + currentLocation);
                     // Load the chunk of the villager
@@ -100,11 +128,8 @@ public class Courier {
                         // Open the chest if the villager is near it
                         if (currentLocation.getBlock().getType().name().contains("CHEST")) {
                             Deliveryman.chests.openChest(currentLocation);
-                            // check if the next location is the last one
-                            locations.remove(0);
-                            InitLocation();
-                            this.cancel();
                         }
+                        locations.remove(0);
                     }
                 }else {
                     despawnVillager();
@@ -122,6 +147,8 @@ public class Courier {
         if (moveTask != null) {
             moveTask.cancel();
         }
+        // clear the locations
+        locations.clear();
         chunkHandler.unloadChunks();
         locations = null;
     }

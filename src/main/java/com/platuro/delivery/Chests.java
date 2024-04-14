@@ -65,13 +65,7 @@ public class Chests {
         new BukkitRunnable() {
             @Override
             public void run() {
-                for (Chunk chunk : Bukkit.getWorld("world").getLoadedChunks()) {
-                    for (BlockState state : chunk.getTileEntities()) {
-                        if (state instanceof Sign) {
-                            checkSign((Sign) state);
-                        }
-                    }
-                }
+                ScanForChests();
                 // Send items from sender chests to address chests
                 for (Map.Entry<Location, String> senderChest : senderChests.entrySet()) {
                     for (Map.Entry<Location, String> addressChest : addressChests.entrySet()) {
@@ -84,7 +78,7 @@ public class Chests {
         }.runTaskTimer(plugin, 0L, 20L * 60 * 5); // Run every 5 minutes
     }
 
-    private void ScanForChests() {
+    public void ScanForChests() {
         for (Chunk chunk : Bukkit.getWorld("world").getLoadedChunks()) {
             for (BlockState state : chunk.getTileEntities()) {
                 if (state instanceof Sign) {
@@ -92,6 +86,15 @@ public class Chests {
                 }
             }
         }
+    }
+
+    private void cleanUp() {
+        // Remove empty chests from the senderChests map
+        senderChests.entrySet().removeIf(entry -> !hasItemsInChest(entry.getKey(), senderChests));
+        // Remove address chests if they don't exist
+        addressChests.entrySet().removeIf(entry -> !ChestExists(entry.getKey()));
+        // Remove empty inventories from the courierStack map
+        courierStack.entrySet().removeIf(entry -> !Arrays.stream(entry.getValue().getContents()).anyMatch(item -> item != null));
     }
 
     private void checkSign(Sign sign) {
@@ -107,6 +110,7 @@ public class Chests {
                     senderChests.put(attached.getLocation(), address);
                     getLogger().info("Registered sender chest at " + attached.getLocation());
                 }
+                cleanUp();
                 addressChestslocationStorage.saveLocations(addressChests);
                 senderChestslocationStorage.saveLocations(senderChests);
             }
@@ -130,12 +134,22 @@ public class Chests {
             }
     }
 
-    boolean hasItemsInChest(Location location) {
-        if(senderChests.containsKey(location)) {
-            return Arrays.stream(((Chest) location.getBlock().getState()).getInventory().getContents()).anyMatch(item -> item != null);
-        }else {
-            return false;
+    public boolean hasItemsInChest(Location location, Map<Location, String> senderChests) {
+        // Check if the location is in the map of chests and if the block at the location is a chest
+        if (senderChests.containsKey(location)) {
+            Block block = location.getBlock();
+            if (block.getState() instanceof Chest) { // Ensure that the block state is a Chest
+                Chest chest = (Chest) block.getState();
+                Inventory inventory = chest.getInventory();
+                return Arrays.stream(inventory.getContents())
+                        .anyMatch(item -> item != null && item.getAmount() > 0); // Check if any item is not null and amount is greater than 0
+            }
         }
+        return false; // Return false if not found in the map or not a chest
+    }
+
+    boolean ChestExists(Location location) {
+        return addressChests.containsKey(location) || senderChests.containsKey(location);
     }
 
     boolean hasCourierItems() {
@@ -156,9 +170,7 @@ public class Chests {
         if (senderChests.containsKey(location)) {
             Inventory chestInventory = ((Chest) location.getBlock().getState()).getInventory();
             String address = senderChests.get(location);
-            if (!courierStack.containsKey(address)) {
-                courierStack.put(address, Bukkit.createInventory(null, 27, "Courier Stack"));
-            }
+            CreateInventoryByName(address);
             Inventory courierInventory = courierStack.get(address);
             TransferItems(chestInventory, courierInventory);
         }
@@ -201,6 +213,15 @@ public class Chests {
                 this.cancel();
             }
         }.runTaskLater(plugin, 20L * 3);*/
+    }
+
+    public Inventory CreateInventoryByName(String address) {
+        // Check if there is a sender chest existing
+        if (!courierStack.containsKey(address)) {
+            return courierStack.put(address, Bukkit.createInventory(null, 27, "For your address: " + address));
+        }else {
+            return courierStack.get(address);
+        }
     }
 
 

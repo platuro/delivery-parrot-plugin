@@ -60,9 +60,9 @@ public final class Deliveryman extends JavaPlugin implements Listener {
 
         Location spawnLocation = world.getSpawnLocation().add(0, 1, 0);
         // Check if there is a sender chest existing
-        if(chests.senderChests.size() > 0) {
+        if(chests.addressChests.size() > 0) {
             // Get the first sender chest
-            for (Location location : chests.senderChests.keySet()) {
+            for (Location location : chests.addressChests.keySet()) {
                 spawnLocation = location;
                 break;
             }

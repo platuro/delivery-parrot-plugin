@@ -152,8 +152,9 @@ public class Chests {
         return addressChests.containsKey(location) || senderChests.containsKey(location);
     }
 
-    boolean hasCourierItems() {
-        return courierStack.values().stream().anyMatch(inventory -> Arrays.stream(inventory.getContents()).anyMatch(item -> item != null));
+    boolean hasCourierItems(Location location) {
+        String address = addressChests.get(location);
+        return courierStack.containsKey(address);
     }
 
     public void openChest(Location location) {

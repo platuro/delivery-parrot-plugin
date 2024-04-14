@@ -20,7 +20,6 @@ public class CourierInventory implements Listener, CommandExecutor {
     public CourierInventory(Deliveryman plugin) {
         getServer().getPluginManager().registerEvents(this, plugin);
         plugin.getCommand("openinventory").setExecutor(this);
-        plugin.getCommand("call").setExecutor(this);
     }
 
     @EventHandler
@@ -55,7 +54,7 @@ public class CourierInventory implements Listener, CommandExecutor {
 
         if(command.getName().equalsIgnoreCase("call")){
             Player player = (Player) sender;
-            Deliveryman.courier.AddLocation(player.getLocation());
+            //Deliveryman.courier.AddLocation(player.getLocation());
             return true;
         }else if(command.getName().equalsIgnoreCase("openinventory")){
             Player player = (Player) sender;

@@ -60,7 +60,7 @@ public class InventoryStorageUtil {
                     String serializedInventory = section.getString(key);
                     ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(serializedInventory));
                     BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
-                    Inventory inventory = Bukkit.getServer().createInventory(null, dataInput.readInt());
+                    Inventory inventory =   Bukkit.getServer().createInventory(null, dataInput.readInt());
 
                     for (int i = 0; i < inventory.getSize(); i++) {
                         inventory.setItem(i, (ItemStack) dataInput.readObject());

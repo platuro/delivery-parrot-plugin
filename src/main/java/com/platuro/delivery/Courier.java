@@ -54,6 +54,9 @@ public class Courier {
         // Set metadata
         villager.setMetadata("Courier", new FixedMetadataValue(plugin, true));
 
+        //create new location list
+        locations = new ArrayList<>();
+
         InitLocation();
         CheckNextJob();
     }
@@ -66,6 +69,16 @@ public class Courier {
         }
     }
 
+    public void Teleport(Location location) {
+        if(locations.size() == 1) {
+            if (villager != null && !villager.isDead()) {
+                villager.teleport(location);
+                // Load the chunk of the villager
+                chunkHandler.loadAdjacentChunks(villager.getWorld(), villager.getLocation().getChunk().getX(), villager.getLocation().getChunk().getZ());
+            }
+        }
+    }
+
     public void InitLocation() {
         // Get all the locations of the chests
         for (Location location : Deliveryman.chests.senderChests.keySet()) {
@@ -73,8 +86,9 @@ public class Courier {
                 locations.add(location);
             }
         }
+        // Check if there are address chests with courier name
         for (Location location : Deliveryman.chests.addressChests.keySet()) {
-            if(Deliveryman.chests.hasCourierItems()) {
+            if(Deliveryman.chests.hasCourierItems(location)) {
                 locations.add(location);
             }
         }
@@ -82,6 +96,7 @@ public class Courier {
         locations.add(villager.getLocation());
         //Print the locations
         plugin.getLogger().info("Locations: " + locations);
+        Teleport(locations.get(0));
         moveVillager();
     }
 
@@ -90,6 +105,9 @@ public class Courier {
         new BukkitRunnable() {
             @Override
             public void run() {
+                if(locations == null) {
+                    locations = new ArrayList<>();
+                }
                 // print size
                 plugin.getLogger().info("Locations size: " + locations.size());
                 if(locations.isEmpty()) {

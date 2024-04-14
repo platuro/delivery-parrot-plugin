@@ -1,10 +1,7 @@
 package com.platuro.delivery;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.BlockPosition;
+import com.platuro.delivery.Until.InventoryStorageUtil;
+import com.platuro.delivery.Until.LocationStorageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -17,6 +14,7 @@ import org.bukkit.block.data.type.WallSign;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.Arrays;
@@ -27,17 +25,40 @@ import static org.apache.logging.log4j.LogManager.getLogger;
 
 public class Chests {
     // Add the Address chests here
-    public Map<Location, String> addressChests = new HashMap<>();
-    public Map<Location, String> senderChests = new HashMap<>();
+    public Map<Location, String> addressChests;
+    public Map<Location, String> senderChests;
 
     // Add a list of Inventories for the sender chests
     public Map<String, Inventory> courierStack = new HashMap<>();
 
     private Plugin plugin;
+    private JavaPlugin javaPlugin;
+    private LocationStorageUtil addressChestslocationStorage;
+    private LocationStorageUtil senderChestslocationStorage;
 
-    public Chests(Plugin plugin) {
+    private InventoryStorageUtil inventoryStorageUtil;
+
+    public Chests(Plugin plugin, JavaPlugin javaPlugin) {
         this.plugin = plugin;
+        this.javaPlugin = javaPlugin;
+        // Initialize the location storage utilities
+        addressChestslocationStorage = new LocationStorageUtil(javaPlugin, "addressChests");
+        senderChestslocationStorage = new LocationStorageUtil(javaPlugin, "senderChests");
+        // Load the chests from the config
+        addressChests = addressChestslocationStorage.loadLocations();
+        senderChests = senderChestslocationStorage.loadLocations();
+        // Initialize the courierStack
+        inventoryStorageUtil = new InventoryStorageUtil(javaPlugin, "courierStack");
+        courierStack = inventoryStorageUtil.loadInventories();
+
         ScanForChests();
+    }
+
+    public void OnDisable() {
+        // Save the chests to the config
+        addressChestslocationStorage.saveLocations(addressChests);
+        senderChestslocationStorage.saveLocations(senderChests);
+        inventoryStorageUtil.saveInventories(courierStack);
     }
 
     void startSignCheckTask() {
@@ -82,10 +103,12 @@ public class Chests {
                 if (role.contains("[address]")) {
                     addressChests.put(attached.getLocation(), address);
                     getLogger().info("Registered address chest at " + attached.getLocation());
-                } else if (role.contains("[delivery sender]")) {
+                } else if (role.contains("[targetaddress]")) {
                     senderChests.put(attached.getLocation(), address);
                     getLogger().info("Registered sender chest at " + attached.getLocation());
                 }
+                addressChestslocationStorage.saveLocations(addressChests);
+                senderChestslocationStorage.saveLocations(senderChests);
             }
         }
     }
@@ -105,6 +128,18 @@ public class Chests {
                     }
                 }
             }
+    }
+
+    boolean hasItemsInChest(Location location) {
+        if(senderChests.containsKey(location)) {
+            return Arrays.stream(((Chest) location.getBlock().getState()).getInventory().getContents()).anyMatch(item -> item != null);
+        }else {
+            return false;
+        }
+    }
+
+    boolean hasCourierItems() {
+        return courierStack.values().stream().anyMatch(inventory -> Arrays.stream(inventory.getContents()).anyMatch(item -> item != null));
     }
 
     public void openChest(Location location) {
@@ -129,7 +164,7 @@ public class Chests {
         }
 
 
-        ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
+        /* ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
         PacketContainer openChest = protocolManager.createPacket(PacketType.Play.Server.BLOCK_ACTION);
         BlockPosition position = new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ());
 
@@ -165,7 +200,7 @@ public class Chests {
                 });
                 this.cancel();
             }
-        }.runTaskLater(plugin, 20L * 3);
+        }.runTaskLater(plugin, 20L * 3);*/
     }
 
 

@@ -3,10 +3,10 @@ version: '1.0-SNAPSHOT'
 main: com.platuro.delivery.Deliveryman
 api-version: '1.20'
 commands:
-  openinventory:
-    description: Open the courier inventory
-    usage: /deliveryman openinventory
+  deliveryman:
+    description: Deliveryman command
+    usage: /deliveryman
 permissions:
-  Deliveryman.openinventory:
-    description: Allows opening the courier inventory
-    default: true
+  Deliveryman.deliveryman:
+    description: Permission to use the Deliveryman command
+    default: op

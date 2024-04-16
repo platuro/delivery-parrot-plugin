@@ -50,6 +50,10 @@ public class InventoryStorageUtil {
     }
 
     public Map<String, Inventory> loadInventories() {
+        return loadInventories("Chest");
+    }
+
+    public Map<String, Inventory> loadInventories(String Title) {
         Map<String, Inventory> inventories = new HashMap<>();
         FileConfiguration config = plugin.getConfig();
         ConfigurationSection section = config.getConfigurationSection(configPath);
@@ -60,7 +64,7 @@ public class InventoryStorageUtil {
                     String serializedInventory = section.getString(key);
                     ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(serializedInventory));
                     BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
-                    Inventory inventory =   Bukkit.getServer().createInventory(null, dataInput.readInt());
+                    Inventory inventory =   Bukkit.getServer().createInventory(null, dataInput.readInt(), Title);
 
                     for (int i = 0; i < inventory.getSize(); i++) {
                         inventory.setItem(i, (ItemStack) dataInput.readObject());

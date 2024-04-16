@@ -17,14 +17,21 @@ public final class Deliveryman extends JavaPlugin implements Listener {
     // sun rise checker
     BukkitRunnable sunriseChecker;
     CourierInventory courierInventory;
+    CommandListener commandListener;
+    public static PostOffice postOffice;
 
     @Override
     public void onEnable() {
         // Plugin startup logic
         chests = new Chests(this, this);
         chests.startSignCheckTask();
-        startSunriseChecker();
+        //startSunriseChecker();
         courierInventory = new CourierInventory(this);
+        commandListener = new CommandListener(this);
+        postOffice = new PostOffice(this);
+        postOffice.Init();
+        this.getCommand("deliveryman").setExecutor(commandListener);
+        CreateCourier(Bukkit.getServer().getWorlds().get(0));
     }
 
     private void startSunriseChecker() {
@@ -91,6 +98,8 @@ public final class Deliveryman extends JavaPlugin implements Listener {
             //ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
             //protocolManager.removePacketListeners(this);
         }
+
+        postOffice.OnStop();
 
         // Disable the listener
         courierInventory.Dispose();

@@ -11,6 +11,7 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.type.WallSign;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
@@ -55,6 +56,7 @@ public class Chests {
     }
 
     public void OnDisable() {
+        cleanUp();
         // Save the chests to the config
         addressChestslocationStorage.saveLocations(addressChests);
         senderChestslocationStorage.saveLocations(senderChests);
@@ -75,7 +77,7 @@ public class Chests {
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 20L * 60 * 5); // Run every 5 minutes
+        }.runTaskTimer(plugin, 0L, 20L * 30); // Run every 5 minutes
     }
 
     public void ScanForChests() {
@@ -86,6 +88,8 @@ public class Chests {
                 }
             }
         }
+        // Clean up the chests
+        cleanUp();
     }
 
     private void cleanUp() {
@@ -123,6 +127,26 @@ public class Chests {
                 if (item != null) {
                     // Check how much of this item can be added to the 'to' inventory
                     HashMap<Integer, ItemStack> unmovable = toInventory.addItem(item.clone());
+                    // Check if the to inventory is on the courierStack
+                    if (courierStack.containsValue(toInventory)) {
+                        // Send Message to the player with the by address name
+                        // Get the address by the inventory
+                        String address = courierStack.entrySet().stream()
+                                .filter(entry -> entry.getValue().equals(toInventory))
+                                .map(Map.Entry::getKey)
+                                .findFirst()
+                                .orElse(null);
+                        // Get the Player with the address name
+                        try {
+                            Player player = Bukkit.getPlayer(address);
+                            // Send the message to the player
+                            // You will get new items in the chest
+                            player.sendMessage("The courier will deliver the Item "+ item.getType() + " to your address: " + address);
+                        } catch (Exception e) {
+
+                        }
+                    }
+
                     if (!unmovable.isEmpty()) {
                         // If not all items could be moved, leave the remainder in the 'from' chest
                         item.setAmount(unmovable.get(0).getAmount());
@@ -219,11 +243,22 @@ public class Chests {
     public Inventory CreateInventoryByName(String address) {
         // Check if there is a sender chest existing
         if (!courierStack.containsKey(address)) {
-            return courierStack.put(address, Bukkit.createInventory(null, 27, "For your address: " + address));
+            courierStack.put(address, Bukkit.createInventory(null, 27, "For your address: " + address));
+            inventoryStorageUtil.saveInventories(courierStack);
+            return courierStack.get(address);
         }else {
             return courierStack.get(address);
         }
     }
 
 
+    public String[] GetAddresses() {
+        return addressChests.values().toArray(new String[0]);
+    }
+
+    public void AddCourierItems(String address, Inventory contents) {
+        Inventory courierInventory = CreateInventoryByName(address);
+        TransferItems(contents, courierInventory);
+        inventoryStorageUtil.saveInventories(courierStack);
+    }
 }

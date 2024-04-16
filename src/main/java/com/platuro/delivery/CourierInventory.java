@@ -15,11 +15,10 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.bukkit.Bukkit.getServer;
 
-public class CourierInventory implements Listener, CommandExecutor {
+public class CourierInventory implements Listener{
 
     public CourierInventory(Deliveryman plugin) {
         getServer().getPluginManager().registerEvents(this, plugin);
-        plugin.getCommand("openinventory").setExecutor(this);
     }
 
     @EventHandler
@@ -34,7 +33,7 @@ public class CourierInventory implements Listener, CommandExecutor {
         }
     }
 
-    private void openCourierInventory(Player player) {
+    void openCourierInventory(Player player) {
         // Check if there is a courierStack with the player's name
         Inventory courierInventory = Deliveryman.chests.CreateInventoryByName(player.getName());
         player.openInventory(courierInventory);
@@ -43,24 +42,5 @@ public class CourierInventory implements Listener, CommandExecutor {
     public void Dispose() {
         // Unregister the listener
         PlayerInteractEntityEvent.getHandlerList().unregister(this);
-    }
-
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("This command can only be run by a player.");
-            return true;
-        }
-
-        if(command.getName().equalsIgnoreCase("call")){
-            Player player = (Player) sender;
-            //Deliveryman.courier.AddLocation(player.getLocation());
-            return true;
-        }else if(command.getName().equalsIgnoreCase("openinventory")){
-            Player player = (Player) sender;
-            openCourierInventory(player);
-            return true;
-        }
-        return false;
     }
 }

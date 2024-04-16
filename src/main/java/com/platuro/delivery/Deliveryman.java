@@ -18,6 +18,7 @@ public final class Deliveryman extends JavaPlugin implements Listener {
     BukkitRunnable sunriseChecker;
     CourierInventory courierInventory;
     CommandListener commandListener;
+    SignListener signListener;
     public static PostOffice postOffice;
 
     @Override
@@ -30,29 +31,20 @@ public final class Deliveryman extends JavaPlugin implements Listener {
         commandListener = new CommandListener(this);
         postOffice = new PostOffice(this);
         postOffice.Init();
+        signListener = new SignListener(this);
         this.getCommand("deliveryman").setExecutor(commandListener);
         CreateCourier(Bukkit.getServer().getWorlds().get(0));
     }
 
     private void startSunriseChecker() {
         sunriseChecker = new BukkitRunnable() {
-            private boolean isDay = false; // Flag to check if it's currently day to avoid multiple triggers
-
             @Override
             public void run() {
                 World world = Bukkit.getServer().getWorlds().get(0); // Get the default world
-                long time = world.getTime(); // Get the current time in the world
-
-                // Check if the time is between 0 and 1000 and it was previously night
-                if (time >= 0 && time <= 1000 && !isDay) {
-                    isDay = true; // Set it to day to avoid re-triggering
-                    CreateCourier(world); // Trigger the event
-                } else if (time > 1000) {
-                    isDay = false; // Reset to night once past sunrise time
-                }
+                CreateCourier(world); // Trigger the event
             }
         };
-        sunriseChecker.runTaskTimer(this, 0L, 20L * 30); // Run the task every minute
+        sunriseChecker.runTaskTimer(this, 0L, 20L * 60); // Run the task every minute
     }
 
     private void CreateCourier(World world) {
@@ -103,6 +95,7 @@ public final class Deliveryman extends JavaPlugin implements Listener {
 
         // Disable the listener
         courierInventory.Dispose();
+        signListener.Dispose();
 
         if(sunriseChecker != null)
             sunriseChecker.cancel();

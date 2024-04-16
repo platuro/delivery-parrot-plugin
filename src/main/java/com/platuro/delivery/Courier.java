@@ -83,6 +83,8 @@ public class Courier {
     }
 
     public void InitLocation() {
+        // clear the locations
+        locations.clear();
         // Get all the locations of the chests
         for (Location location : Deliveryman.chests.senderChests.keySet()) {
             if(Deliveryman.chests.hasItemsInChest(location, Deliveryman.chests.senderChests)) {
@@ -103,7 +105,20 @@ public class Courier {
         }
         //Print the locations
         plugin.getLogger().info("Locations: " + locations);
+        // Sort the locations after the nearest
+        locations = SortLocationsAfterNearest();
         moveVillager();
+    }
+
+    public List<Location> SortLocationsAfterNearest() {
+        // Sort the locations after the nearest
+        locations.sort((location1, location2) -> {
+            if (villager == null || villager.isDead()) {
+                return 0;
+            }
+            return (int) (villager.getLocation().distance(location1) - villager.getLocation().distance(location2));
+        });
+        return locations;
     }
 
     public void CheckNextJob() {
@@ -142,7 +157,7 @@ public class Courier {
                     VilliagerFlyTo(currentLocation);
 
                     // Print
-                    plugin.getLogger().info("Moving to " + currentLocation);
+                    //plugin.getLogger().info("Moving to " + currentLocation);
                     // Load the chunk of the villager
                     chunkHandler.loadAdjacentChunks(villager.getWorld(), villager.getLocation().getChunk().getX(), villager.getLocation().getChunk().getZ());
 
@@ -151,6 +166,8 @@ public class Courier {
 
                     //if it reaches the destination open the chest
                     if (villager.getLocation().distance(currentLocation) < 2.0) {
+                        // Print it is near the location
+                        plugin.getLogger().info("Near the location: " + currentLocation);
                         // Open the chest if the villager is near it
                         if (currentLocation.getBlock().getType().name().contains("CHEST")) {
                             Deliveryman.chests.openChest(currentLocation);
@@ -176,11 +193,31 @@ public class Courier {
         if (!villager.isValid() || villager.isDead()) {
             return;
         }
-        Location currentLocation = villager.getLocation();
+        Location currentLocation = villager.getLocation().clone();
+        Location location1 = location.clone();
+        float speed = 0.5f;
 
         // if the distance is less than 2 chunk, return
         if (currentLocation.distance(location) < 16 && currentLocation.getChunk().isLoaded()) {
-            return;
+            speed = 0.1f;
+        }
+
+        if (currentLocation.distance(location) >= 16) {
+            // Only adjust the height if we are significantly horizontally distant
+            float incrementY = 0.3F;  // Define the Y-increment
+            int maxY = 255;       // Define the maximum Y to stop increasing
+            int significantDistanceX = 10;  // Define what is considered significant horizontal distance
+
+            // Check if we need to increase Y based on X distance
+            if (Math.abs(location1.getX() - currentLocation.getX()) > significantDistanceX) {
+                // Calculate the new potential Y
+                float newY = (float) (currentLocation.getY() + incrementY);
+                if (newY < maxY) {
+                    currentLocation.setY(newY);
+                } else {
+                    currentLocation.setY(maxY);  // Ensure we do not exceed the maximum Y
+                }
+            }
         }
 
         //Check if its stuck since the last location
@@ -189,19 +226,23 @@ public class Courier {
         }
 
         if (ticks > 10) {
-            //teleport the villager to the location
-            currentLocation.setY(currentLocation.getY() + 1.0);
+            Vector direction = currentLocation.toVector().subtract(location1.toVector()).normalize(); // Calculate the direction vector towards location1
+            // Move the villager slightly (0.1 blocks) towards the direction of location1
+            currentLocation.add(direction.multiply(-0.1));
+            currentLocation.setY(currentLocation.getY() + 0.1); // Slightly raise the Y position to avoid sinking into the ground
+            // Teleport the villager to the new location
             villager.teleport(currentLocation);
+            // Reset ticks after the operation
             ticks = 0;
         }
 
-        if (currentLocation.distance(location) < 1.0) {
+        if (currentLocation.distance(location) < 1.5) {
             villager.setAI(true); // Re-enable AI upon arrival
             return;
         }
 
         @NotNull Vector direction = location.toVector().subtract(currentLocation.toVector()).normalize();
-        direction.multiply(0.5); // Set the speed of the villager's flight
+        direction.multiply(speed); // Set the speed of the villager's flight
         villager.setVelocity(direction);
 
         // Set villager's head direction

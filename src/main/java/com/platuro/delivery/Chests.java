@@ -81,6 +81,9 @@ public class Chests {
     }
 
     public void ScanForChests() {
+        // Clean up the chests
+        cleanUp();
+        // Scan for chests in the world
         for (Chunk chunk : Bukkit.getWorld("world").getLoadedChunks()) {
             for (BlockState state : chunk.getTileEntities()) {
                 if (state instanceof Sign) {
@@ -88,8 +91,6 @@ public class Chests {
                 }
             }
         }
-        // Clean up the chests
-        cleanUp();
     }
 
     private void cleanUp() {
@@ -117,6 +118,9 @@ public class Chests {
                 cleanUp();
                 addressChestslocationStorage.saveLocations(addressChests);
                 senderChestslocationStorage.saveLocations(senderChests);
+                if(Deliveryman.courier != null){
+                    Deliveryman.courier.InitLocation();
+                }
             }
         }
     }
@@ -156,6 +160,8 @@ public class Chests {
                     }
                 }
             }
+            // Init the locations
+            Deliveryman.courier.InitLocation();
     }
 
     public boolean hasItemsInChest(Location location, Map<Location, String> senderChests) {
@@ -173,15 +179,25 @@ public class Chests {
     }
 
     boolean ChestExists(Location location) {
-        return addressChests.containsKey(location) || senderChests.containsKey(location);
+        // Check if on the location is a chest
+        return location.getBlock().getState() instanceof Chest;
     }
 
     boolean hasCourierItems(Location location) {
         String address = addressChests.get(location);
-        return courierStack.containsKey(address);
+        // Check if there are items in the courierStack
+        if (courierStack.containsKey(address)) {
+            Inventory courierInventory = courierStack.get(address);
+            return Arrays.stream(courierInventory.getContents())
+                    .anyMatch(item -> item != null && item.getAmount() > 0);
+        }else {
+            return false;
+        }
     }
 
     public void openChest(Location location) {
+        // Print open Chest
+        getLogger().info("Open Chest");
         // Handle Address Chest Logic: Retrieve items from courierStack and place them into the chest
         if (addressChests.containsKey(location)) {
             Inventory chestInventory = ((Chest) location.getBlock().getState()).getInventory();

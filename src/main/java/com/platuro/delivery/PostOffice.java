@@ -113,6 +113,10 @@ public class PostOffice implements Listener {
 
     @EventHandler
     public void onChunkLoad(ChunkLoadEvent event) {
+        // if new chunk is loaded
+        if (!event.isNewChunk())
+            return;
+
         // Check if there is a post office in the new chunk
         if(hasItemsInPostOffice(event.getChunk().getBlock(8, 8, 8).getLocation()))
             return;

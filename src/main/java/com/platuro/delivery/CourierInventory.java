@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.Inventory;
 import org.jetbrains.annotations.NotNull;
@@ -37,6 +38,12 @@ public class CourierInventory implements Listener{
         // Check if there is a courierStack with the player's name
         Inventory courierInventory = Deliveryman.chests.CreateInventoryByName(player.getName());
         player.openInventory(courierInventory);
+    }
+
+    @EventHandler
+    // on inventory close
+    public void onInventoryClose(InventoryCloseEvent event) {
+        Deliveryman.courier.InitLocation();
     }
 
     public void Dispose() {
